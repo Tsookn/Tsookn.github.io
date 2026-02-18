@@ -1,1 +1,101 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graviton - Privacy Policy</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #f0f0f0;
+            line-height: 1.8;
+        }
+
+        header {
+            background: #111;
+            text-align: center;
+            padding: 50px 20px;
+            border-bottom: 1px solid #222;
+        }
+
+        header h1 {
+            font-size: 2em;
+            letter-spacing: 4px;
+            color: #f0c040;
+        }
+
+        header p { color: #888; margin-top: 8px; }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        h2 {
+            font-size: 1.2em;
+            color: #f0c040;
+            margin: 35px 0 12px;
+        }
+
+        p { color: #bbb; margin-bottom: 15px; }
+
+        footer {
+            background: #111;
+            color: #888;
+            text-align: center;
+            padding: 30px 20px;
+            border-top: 1px solid #222;
+        }
+
+        footer a {
+            color: #f0c040;
+            text-decoration: none;
+            margin: 0 15px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>GRAVITON</h1>
+        <p>Privacy Policy</p>
+    </header>
+
+    <div class="container">
+        <p>Last updated: February 2026</p>
+
+        <h2>Overview</h2>
+        <p>Graviton is a motion-based game developed by Tsook Nir LTD. We are committed to protecting your privacy. This policy explains how the app handles information.</p>
+
+        <h2>Data We Do Not Collect</h2>
+        <p>Graviton does not collect, store, or transmit any personal information. We do not use analytics, advertising, or tracking of any kind.</p>
+
+        <h2>Motion Sensors</h2>
+        <p>Graviton uses your device's motion sensors (gyroscope and accelerometer) to control gameplay. This data is used exclusively on your device in real time and is never stored or transmitted.</p>
+
+        <h2>Local Storage</h2>
+        <p>The app stores your game settings and best times locally on your device only. This data never leaves your device.</p>
+
+        <h2>Third Parties</h2>
+        <p>Graviton does not integrate any third-party SDKs, analytics tools, or advertising networks.</p>
+
+        <h2>Children</h2>
+        <p>Graviton does not collect any data from any users, including children under the age of 13.</p>
+
+        <h2>Contact</h2>
+        <p>If you have any questions about this privacy policy, please contact us at: <a href="mailto:support@tsook.net" style="color:#f0c040;">support@tsook.net</a></p>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Tsook Nir LTD</p>
+        <div style="margin-top: 15px;">
+            <a href="index.html">Graviton</a>
+            <a href="../index.html">All Apps</a>
+        </div>
+    </footer>
+</body>
+</html>
