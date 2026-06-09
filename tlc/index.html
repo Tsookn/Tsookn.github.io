@@ -241,6 +241,58 @@
             word-wrap: break-word;
             unicode-bidi: plaintext;
         }
+        .new-msg-label {
+            color: #f0c040;
+            font-weight: bold;
+            font-size: 1.02em;
+            margin-bottom: 12px;
+        }
+        .comment.reply { border-left: 2px solid rgba(240,192,64,0.3); }
+        .comment-meta { display: flex; align-items: baseline; gap: 12px; white-space: nowrap; }
+        .reply-btn {
+            background: none;
+            border: none;
+            color: #f0c040;
+            cursor: pointer;
+            font-size: 0.82em;
+            padding: 0;
+            white-space: nowrap;
+        }
+        .reply-btn:hover { text-decoration: underline; }
+        .reply-form { margin-top: 12px; }
+        .reply-to {
+            color: #f0c040;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+            unicode-bidi: plaintext;
+        }
+        .reply-form .fb-name { margin-bottom: 8px; }
+        .reply-form textarea {
+            width: 100%;
+            min-height: 70px;
+            background: #0b0b12;
+            color: #f0f0f0;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 10px;
+            font-family: inherit;
+            font-size: 0.95em;
+            resize: vertical;
+            margin-bottom: 8px;
+        }
+        .reply-form textarea:focus { outline: none; border-color: #f0c040; }
+        .rf-actions { display: flex; gap: 8px; }
+        .rf-actions button {
+            background: #f0c040;
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 18px;
+            font-weight: bold;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+        .rf-actions button.cancel { background: #222; color: #bbb; }
 
         @media (max-width: 768px) {
             header h1 { font-size: 1.8em; letter-spacing: 2px; }
@@ -337,8 +389,9 @@
         </div>
 
         <div class="feedback">
-            <h3>Message Board</h3>
-            <p class="lead">A public board — post a message for everyone to see, share an idea, or just say hi.</p>
+            <h3>Comments &amp; Feedback Board</h3>
+            <p class="lead">A public board — post a comment for everyone to see, share an idea, or reply to others.</p>
+            <div class="new-msg-label">✍ Write a new message</div>
             <input id="cName" class="fb-name" type="text" maxlength="40" placeholder="Your name (optional)">
             <input id="cHp" class="fb-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
             <textarea id="cText" maxlength="1000" placeholder="Write your message here…"></textarea>
@@ -412,28 +465,94 @@
             window.location.href = 'mailto:tlc@tsook.net?subject=' + subject + '&body=' + body;
         };
 
-        const q = query(colRef, orderBy("createdAt", "desc"), limit(200));
-        onSnapshot(q, (snap) => {
-            if (snap.empty) {
-                listEl.innerHTML = '<p class="cl-empty">Be the first to comment.</p>';
+        // Pull newest-first, then re-thread client-side into a reply tree.
+        const q = query(colRef, orderBy("createdAt", "desc"), limit(300));
+
+        let lastDocs = [];                       // latest snapshot (newest-first)
+        let openReplyId = null;                  // message whose reply box is open
+        const replyDraft = { name: '', text: '' }; // preserved across re-renders
+        window.replyDraft = replyDraft;          // reachable from inline oninput
+
+        function commentHTML(c, depth) {
+            const indent = Math.min(depth, 6) * 18;
+            const cls = depth > 0 ? 'comment reply' : 'comment';
+            const nm = esc(c.name || 'Anonymous');
+            let h = '<div class="' + cls + '" style="margin-left:' + indent + 'px">'
+                + '<div class="comment-head">'
+                + '<span class="comment-name">' + nm + '</span>'
+                + '<span class="comment-meta">'
+                + '<span class="comment-date">' + fmtDate(c.createdAt) + '</span>'
+                + '<button class="reply-btn" onclick="toggleReply(\'' + c.id + '\')">↩ Reply</button>'
+                + '</span>'
+                + '</div>'
+                + '<div class="comment-text">' + esc(c.text) + '</div>';
+            if (openReplyId === c.id) {
+                h += '<div class="reply-form">'
+                    + '<div class="reply-to">↩ Replying to <b>' + nm + '</b></div>'
+                    + '<input class="fb-name" type="text" maxlength="40" placeholder="Your name (optional)" '
+                    + 'value="' + esc(replyDraft.name) + '" oninput="replyDraft.name=this.value">'
+                    + '<textarea maxlength="1000" placeholder="Write your reply…" '
+                    + 'oninput="replyDraft.text=this.value">' + esc(replyDraft.text) + '</textarea>'
+                    + '<div class="rf-actions">'
+                    + '<button onclick="submitReply(\'' + c.id + '\')">Post Reply</button>'
+                    + '<button class="cancel" onclick="toggleReply(\'' + c.id + '\')">Cancel</button>'
+                    + '</div></div>';
+            }
+            return h + '</div>';
+        }
+
+        function renderTree() {
+            if (!lastDocs.length) {
+                listEl.innerHTML = '<p class="cl-empty">Be the first to post.</p>';
                 return;
             }
-            let html = '';
-            snap.forEach(doc => {
-                const d = doc.data();
-                html += '<div class="comment">'
-                    + '<div class="comment-head">'
-                    + '<span class="comment-name">' + esc(d.name || 'Anonymous') + '</span>'
-                    + '<span class="comment-date">' + fmtDate(d.createdAt) + '</span>'
-                    + '</div>'
-                    + '<div class="comment-text">' + esc(d.text) + '</div>'
-                    + '</div>';
+            const byParent = {};
+            lastDocs.forEach(c => {
+                const pid = c.parentId || '__root__';
+                (byParent[pid] = byParent[pid] || []).push(c);
             });
+            let html = '';
+            (function walk(parentKey, depth) {
+                let kids = byParent[parentKey] || [];
+                // top level newest-first; replies oldest-first (reads like a thread)
+                if (parentKey !== '__root__') kids = kids.slice().reverse();
+                kids.forEach(c => { html += commentHTML(c, depth); walk(c.id, depth + 1); });
+            })('__root__', 0);
             listEl.innerHTML = html;
+            if (openReplyId) {
+                const ta = listEl.querySelector('.reply-form textarea');
+                if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+            }
+        }
+
+        window.toggleReply = function (id) {
+            if (openReplyId === id) { openReplyId = null; }
+            else { openReplyId = id; replyDraft.name = ''; replyDraft.text = ''; }
+            renderTree();
+        };
+
+        onSnapshot(q, (snap) => {
+            lastDocs = [];
+            snap.forEach(doc => lastDocs.push(Object.assign({ id: doc.id }, doc.data())));
+            renderTree();
         }, (err) => {
-            listEl.innerHTML = '<p class="cl-empty">Could not load comments right now.</p>';
+            listEl.innerHTML = '<p class="cl-empty">Could not load messages right now.</p>';
             console.error(err);
         });
+
+        async function postMessage(text, name, parentId, setStatus) {
+            const t = (text || '').trim();
+            const n = (name || '').trim().slice(0, 40);
+            if (!t) { setStatus('Please write something first.'); return false; }
+            if (t.length > 1000) { setStatus('Message is too long (max 1000 characters).'); return false; }
+            await addDoc(colRef, {
+                name: n || 'Anonymous',
+                text: t,
+                parentId: parentId || null,
+                createdAt: serverTimestamp()
+            });
+            return true;
+        }
 
         window.postComment = async function () {
             const nameEl = document.getElementById('cName');
@@ -441,21 +560,30 @@
             const hpEl = document.getElementById('cHp');
             const btn = document.getElementById('cPost');
             if (hpEl && hpEl.value) { return; } // honeypot — silently ignore bots
-            const text = (textEl.value || '').trim();
-            const name = (nameEl.value || '').trim().slice(0, 40);
-            if (!text) { statusEl.textContent = 'Please write something first.'; return; }
-            if (text.length > 1000) { statusEl.textContent = 'Comment is too long (max 1000 characters).'; return; }
             btn.disabled = true;
             statusEl.textContent = 'Posting…';
             try {
-                await addDoc(colRef, { name: name || 'Anonymous', text: text, createdAt: serverTimestamp() });
-                textEl.value = '';
-                statusEl.textContent = 'Thanks! Your comment is posted.';
+                const ok = await postMessage(textEl.value, nameEl.value, null, m => statusEl.textContent = m);
+                if (ok) { textEl.value = ''; statusEl.textContent = 'Thanks! Your message is posted.'; }
             } catch (e) {
                 statusEl.textContent = 'Sorry, could not post right now. Please try again later.';
                 console.error(e);
             } finally {
                 btn.disabled = false;
+            }
+        };
+
+        window.submitReply = async function (parentId) {
+            try {
+                const ok = await postMessage(replyDraft.text, replyDraft.name, parentId, m => statusEl.textContent = m);
+                if (ok) {
+                    replyDraft.name = ''; replyDraft.text = '';
+                    openReplyId = null;
+                    statusEl.textContent = 'Thanks! Your reply is posted.';
+                }
+            } catch (e) {
+                statusEl.textContent = 'Sorry, could not post your reply. Please try again later.';
+                console.error(e);
             }
         };
     </script>
