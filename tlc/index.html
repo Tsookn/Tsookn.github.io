@@ -187,15 +187,18 @@
             background: #f0c040;
             color: #000;
             border: none;
-            padding: 10px 24px;
-            border-radius: 8px;
-            font-size: 1em;
+            padding: 5px 14px;
+            border-radius: 6px;
+            font-size: 0.82em;
             font-weight: bold;
             cursor: pointer;
             transition: background 0.2s;
         }
         .feedback button:hover { background: #ffda70; }
         .feedback button:disabled { background: #6a5a28; color: #444; cursor: default; }
+        .feedback button.cancel { background: #222; color: #bbb; }
+        .feedback button.cancel:hover { background: #333; }
+        .compose-actions { display: flex; gap: 6px; justify-content: center; }
 
         .fb-name {
             width: 100%;
@@ -415,10 +418,13 @@
             <p class="lead">A public board — post a comment for everyone to see, share an idea, or reply to others.</p>
             <div class="new-msg-box">
                 <div class="new-msg-label">✍ Write a new message</div>
-                <input id="cName" class="fb-name" type="text" maxlength="40" placeholder="Your name (optional)">
+                <input id="cName" class="fb-name" type="text" maxlength="40" placeholder="Your name (optional)" oninput="onComposeInput()">
                 <input id="cHp" class="fb-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
-                <textarea id="cText" maxlength="1000" placeholder="Write your message here…"></textarea>
-                <button id="cPost" onclick="postComment()">Post new Message</button>
+                <textarea id="cText" maxlength="1000" placeholder="Write your message here…" oninput="onComposeInput()"></textarea>
+                <div class="compose-actions">
+                    <button id="cPost" onclick="postComment()">Post new Message</button>
+                    <button id="cCancel" class="cancel" onclick="clearNewMessage()" style="display:none">Cancel</button>
+                </div>
             </div>
             <p id="cStatus" class="fb-status"></p>
             <div id="cList" class="comment-list"><p class="cl-empty">Loading messages…</p></div>
@@ -600,6 +606,21 @@
             return true;
         }
 
+        // Show the new-message Cancel/clear button only once something is typed.
+        window.onComposeInput = function () {
+            const has = !!(document.getElementById('cText').value.trim()
+                || document.getElementById('cName').value.trim());
+            const c = document.getElementById('cCancel');
+            if (c) c.style.display = has ? '' : 'none';
+        };
+
+        window.clearNewMessage = function () {
+            document.getElementById('cName').value = '';
+            document.getElementById('cText').value = '';
+            statusEl.textContent = '';
+            window.onComposeInput();
+        };
+
         window.postComment = async function () {
             const nameEl = document.getElementById('cName');
             const textEl = document.getElementById('cText');
@@ -610,7 +631,7 @@
             statusEl.textContent = 'Posting…';
             try {
                 const ok = await postMessage(textEl.value, nameEl.value, null, m => statusEl.textContent = m);
-                if (ok) { textEl.value = ''; statusEl.textContent = 'Thanks! Your message is posted.'; }
+                if (ok) { textEl.value = ''; statusEl.textContent = 'Thanks! Your message is posted.'; window.onComposeInput(); }
             } catch (e) {
                 statusEl.textContent = 'Sorry, could not post right now. Please try again later.';
                 console.error(e);
