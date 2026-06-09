@@ -168,28 +168,28 @@
             box-shadow: 0 8px 30px rgba(0,0,0,0.4);
         }
         .feedback h3 { color: #f0c040; font-size: 1.5em; margin-bottom: 6px; }
-        .feedback .lead { color: #bbb; margin-bottom: 18px; }
+        .feedback .lead { color: #bbb; margin-bottom: 12px; }
         .feedback textarea {
             width: 100%;
-            min-height: 130px;
+            min-height: 88px;
             background: #0e0e16;
             color: #f0f0f0;
             border: 1px solid #2a2a2a;
             border-radius: 10px;
-            padding: 14px;
+            padding: 11px;
             font-size: 1em;
             font-family: inherit;
             resize: vertical;
-            margin-bottom: 16px;
+            margin-bottom: 10px;
         }
         .feedback textarea:focus { outline: none; border-color: #f0c040; }
         .feedback button {
             background: #f0c040;
             color: #000;
             border: none;
-            padding: 13px 36px;
+            padding: 10px 24px;
             border-radius: 8px;
-            font-size: 1.05em;
+            font-size: 1em;
             font-weight: bold;
             cursor: pointer;
             transition: background 0.2s;
@@ -203,80 +203,85 @@
             color: #f0f0f0;
             border: 1px solid #2a2a2a;
             border-radius: 10px;
-            padding: 12px 14px;
+            padding: 9px 12px;
             font-size: 1em;
             font-family: inherit;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
         .fb-name:focus { outline: none; border-color: #f0c040; }
         .fb-hp { position: absolute; left: -9999px; top: -9999px; width: 1px; height: 1px; opacity: 0; }
         .fb-status { min-height: 1.2em; margin-top: 14px; color: #9ad29a; font-size: 0.9em; }
 
         .comment-list {
-            margin-top: 30px;
+            margin-top: 18px;
             text-align: left;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 4px;
         }
         .cl-empty { color: #888; text-align: center; }
-        .thread-row { display: flex; gap: 10px; align-items: flex-start; }
-        .thread-side { flex: 0 0 auto; min-width: 40px; text-align: center; padding-top: 12px; }
-        .thread-num { color: #f0c040; font-weight: bold; font-size: 0.92em; }
-        .thread-replies { color: #888; font-size: 0.75em; margin-top: 4px; white-space: nowrap; }
+        .thread-row { display: flex; gap: 5px; align-items: flex-start; }
+        .thread-side { flex: 0 0 22px; text-align: center; padding-top: 9px; }
+        .thread-num { color: #f0c040; font-weight: bold; font-size: 0.78em; }
+        .thread-replies { color: #888; font-size: 0.66em; margin-top: 2px; white-space: nowrap; }
         .thread-box {
             flex: 1 1 auto;
             min-width: 0;
             background: #0e0e16;
             border: 1px solid #222;
-            border-radius: 12px;
-            padding: 14px 16px;
+            border-radius: 10px;
+            padding: 8px 11px;
         }
         .reply {
-            margin-top: 14px;
-            padding-left: 12px;
+            margin-top: 8px;
+            padding-left: 9px;
             border-left: 2px solid rgba(240,192,64,0.3);
         }
         .comment-head {
             display: flex;
             justify-content: space-between;
             align-items: baseline;
-            gap: 12px;
-            margin-bottom: 6px;
+            flex-wrap: wrap;
+            gap: 4px 10px;
+            margin-bottom: 3px;
         }
-        .comment-name { color: #f0c040; font-weight: bold; font-size: 0.95em; }
-        .comment-date { color: #777; font-size: 0.8em; white-space: nowrap; }
+        .comment-name { color: #f0c040; font-weight: bold; font-size: 0.92em; }
+        .comment-date { color: #777; font-size: 0.76em; white-space: nowrap; }
         .comment-text {
             color: #e8e8e8;
             white-space: pre-wrap;
             word-wrap: break-word;
             unicode-bidi: plaintext;
+            line-height: 1.4;
         }
         .new-msg-label {
             color: #f0c040;
             font-weight: bold;
             font-size: 1.02em;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
-        .comment-meta { display: flex; align-items: baseline; gap: 12px; white-space: nowrap; }
-        .reply-btn {
-            background: none;
+        .comment-meta { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
+        .comment-head .reply-btn {
+            background: #f0c040;
+            color: #000;
             border: none;
-            color: #f0c040;
+            border-radius: 5px;
+            padding: 0 8px;
+            font-size: 0.72em;
+            font-weight: bold;
+            line-height: 1.5;
             cursor: pointer;
-            font-size: 0.82em;
-            padding: 0;
             white-space: nowrap;
         }
-        .reply-btn:hover { text-decoration: underline; }
+        .comment-head .reply-btn:hover { background: #ffda70; }
         .new-msg-box, .reply-form {
             border: 1px solid rgba(240,192,64,0.4);
-            border-radius: 12px;
-            padding: 16px;
+            border-radius: 10px;
+            padding: 11px;
             background: #10101a;
         }
-        .new-msg-box { margin-bottom: 22px; }
-        .reply-form { margin-top: 12px; }
+        .new-msg-box { margin-bottom: 12px; }
+        .reply-form { margin-top: 8px; }
         .reply-to {
             color: #f0c040;
             font-size: 0.85em;
@@ -286,7 +291,7 @@
         .reply-form .fb-name { margin-bottom: 8px; }
         .reply-form textarea {
             width: 100%;
-            min-height: 70px;
+            min-height: 54px;
             background: #0b0b12;
             color: #f0f0f0;
             border: 1px solid #2a2a2a;
@@ -298,15 +303,15 @@
             margin-bottom: 8px;
         }
         .reply-form textarea:focus { outline: none; border-color: #f0c040; }
-        .rf-actions { display: flex; gap: 8px; }
+        .rf-actions { display: flex; gap: 6px; }
         .rf-actions button {
             background: #f0c040;
             color: #000;
             border: none;
             border-radius: 6px;
-            padding: 8px 18px;
+            padding: 5px 14px;
             font-weight: bold;
-            font-size: 0.9em;
+            font-size: 0.82em;
             cursor: pointer;
         }
         .rf-actions button.cancel { background: #222; color: #bbb; }
