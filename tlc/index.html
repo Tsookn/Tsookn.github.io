@@ -195,6 +195,52 @@
             transition: background 0.2s;
         }
         .feedback button:hover { background: #ffda70; }
+        .feedback button:disabled { background: #6a5a28; color: #444; cursor: default; }
+
+        .fb-name {
+            width: 100%;
+            background: #0e0e16;
+            color: #f0f0f0;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 1em;
+            font-family: inherit;
+            margin-bottom: 12px;
+        }
+        .fb-name:focus { outline: none; border-color: #f0c040; }
+        .fb-hp { position: absolute; left: -9999px; top: -9999px; width: 1px; height: 1px; opacity: 0; }
+        .fb-status { min-height: 1.2em; margin-top: 14px; color: #9ad29a; font-size: 0.9em; }
+
+        .comment-list {
+            margin-top: 30px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .cl-empty { color: #888; text-align: center; }
+        .comment {
+            background: #0e0e16;
+            border: 1px solid #222;
+            border-radius: 12px;
+            padding: 14px 16px;
+        }
+        .comment-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+        .comment-name { color: #f0c040; font-weight: bold; font-size: 0.95em; }
+        .comment-date { color: #777; font-size: 0.8em; white-space: nowrap; }
+        .comment-text {
+            color: #e8e8e8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            unicode-bidi: plaintext;
+        }
 
         @media (max-width: 768px) {
             header h1 { font-size: 1.8em; letter-spacing: 2px; }
@@ -291,10 +337,14 @@
         </div>
 
         <div class="feedback">
-            <h3>Feedback</h3>
-            <p class="lead">Have a comment, an idea, or found a bug? We'd love to hear from you.</p>
-            <textarea id="fbText" placeholder="Write your feedback here…"></textarea>
-            <button onclick="sendFeedback()">Send Feedback</button>
+            <h3>Comments &amp; Feedback</h3>
+            <p class="lead">Have a comment, an idea, or found a bug? Share it below — and see what others are saying.</p>
+            <input id="cName" class="fb-name" type="text" maxlength="40" placeholder="Your name (optional)">
+            <input id="cHp" class="fb-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <textarea id="cText" maxlength="1000" placeholder="Write your comment here…"></textarea>
+            <button id="cPost" onclick="postComment()">Post Comment</button>
+            <p id="cStatus" class="fb-status"></p>
+            <div id="cList" class="comment-list"><p class="cl-empty">Loading comments…</p></div>
         </div>
     </div>
 
@@ -307,13 +357,92 @@
         </div>
     </footer>
 
-    <script>
-        function sendFeedback() {
-            var t = document.getElementById('fbText').value.trim();
-            var subject = encodeURIComponent('Timeline Calendar — Feedback');
-            var body = encodeURIComponent(t);
-            window.location.href = 'mailto:tlc@tsook.net?subject=' + subject + '&body=' + body;
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import {
+            getFirestore, collection, addDoc, query, orderBy, onSnapshot,
+            serverTimestamp, limit
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // ===== Firebase web config — PASTE your 6 values here =====
+        // Firebase console → Project settings (⚙) → "Your apps" → Web app → SDK setup → Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyD-6CoRhz66TMoXL8Wxn2dQ0tsYGYfMz5M",
+            authDomain: "time-line-calendar.firebaseapp.com",
+            projectId: "time-line-calendar",
+            storageBucket: "time-line-calendar.firebasestorage.app",
+            messagingSenderId: "988061834859",
+            appId: "1:988061834859:web:073b69a27229d7a3f35b2e",
+            measurementId: "G-RRNT9B5NWX"
+        };
+        // ==========================================================
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const colRef = collection(db, "tlc_comments");
+
+        const listEl = document.getElementById('cList');
+        const statusEl = document.getElementById('cStatus');
+
+        function esc(s) {
+            return (s || '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
         }
+        function fmtDate(ts) {
+            try {
+                const d = ts && ts.toDate ? ts.toDate() : null;
+                if (!d) return '';
+                return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+            } catch (e) { return ''; }
+        }
+
+        const q = query(colRef, orderBy("createdAt", "desc"), limit(200));
+        onSnapshot(q, (snap) => {
+            if (snap.empty) {
+                listEl.innerHTML = '<p class="cl-empty">Be the first to comment.</p>';
+                return;
+            }
+            let html = '';
+            snap.forEach(doc => {
+                const d = doc.data();
+                html += '<div class="comment">'
+                    + '<div class="comment-head">'
+                    + '<span class="comment-name">' + esc(d.name || 'Anonymous') + '</span>'
+                    + '<span class="comment-date">' + fmtDate(d.createdAt) + '</span>'
+                    + '</div>'
+                    + '<div class="comment-text">' + esc(d.text) + '</div>'
+                    + '</div>';
+            });
+            listEl.innerHTML = html;
+        }, (err) => {
+            listEl.innerHTML = '<p class="cl-empty">Could not load comments right now.</p>';
+            console.error(err);
+        });
+
+        window.postComment = async function () {
+            const nameEl = document.getElementById('cName');
+            const textEl = document.getElementById('cText');
+            const hpEl = document.getElementById('cHp');
+            const btn = document.getElementById('cPost');
+            if (hpEl && hpEl.value) { return; } // honeypot — silently ignore bots
+            const text = (textEl.value || '').trim();
+            const name = (nameEl.value || '').trim().slice(0, 40);
+            if (!text) { statusEl.textContent = 'Please write something first.'; return; }
+            if (text.length > 1000) { statusEl.textContent = 'Comment is too long (max 1000 characters).'; return; }
+            btn.disabled = true;
+            statusEl.textContent = 'Posting…';
+            try {
+                await addDoc(colRef, { name: name || 'Anonymous', text: text, createdAt: serverTimestamp() });
+                textEl.value = '';
+                statusEl.textContent = 'Thanks! Your comment is posted.';
+            } catch (e) {
+                statusEl.textContent = 'Sorry, could not post right now. Please try again later.';
+                console.error(e);
+            } finally {
+                btn.disabled = false;
+            }
+        };
     </script>
 </body>
 </html>
