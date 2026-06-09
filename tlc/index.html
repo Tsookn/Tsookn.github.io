@@ -337,14 +337,21 @@
         </div>
 
         <div class="feedback">
-            <h3>Comments &amp; Feedback</h3>
-            <p class="lead">Have a comment, an idea, or found a bug? Share it below — and see what others are saying.</p>
+            <h3>Message Board</h3>
+            <p class="lead">A public board — post a message for everyone to see, share an idea, or just say hi.</p>
             <input id="cName" class="fb-name" type="text" maxlength="40" placeholder="Your name (optional)">
             <input id="cHp" class="fb-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
-            <textarea id="cText" maxlength="1000" placeholder="Write your comment here…"></textarea>
-            <button id="cPost" onclick="postComment()">Post Comment</button>
+            <textarea id="cText" maxlength="1000" placeholder="Write your message here…"></textarea>
+            <button id="cPost" onclick="postComment()">Post to Board</button>
             <p id="cStatus" class="fb-status"></p>
-            <div id="cList" class="comment-list"><p class="cl-empty">Loading comments…</p></div>
+            <div id="cList" class="comment-list"><p class="cl-empty">Loading messages…</p></div>
+        </div>
+
+        <div class="feedback">
+            <h3>Send Feedback by Email</h3>
+            <p class="lead">Prefer to reach us privately? This opens your email app with a message to the developer — it won't appear on the board.</p>
+            <textarea id="fbText" placeholder="Write your feedback here…"></textarea>
+            <button onclick="sendFeedback()">Send Email</button>
         </div>
     </div>
 
@@ -396,6 +403,14 @@
                 return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
             } catch (e) { return ''; }
         }
+
+        // Private email feedback — opens the user's mail app, nothing is stored/shown publicly.
+        window.sendFeedback = function () {
+            const t = (document.getElementById('fbText').value || '').trim();
+            const subject = encodeURIComponent('Timeline Calendar — Feedback');
+            const body = encodeURIComponent(t);
+            window.location.href = 'mailto:tlc@tsook.net?subject=' + subject + '&body=' + body;
+        };
 
         const q = query(colRef, orderBy("createdAt", "desc"), limit(200));
         onSnapshot(q, (snap) => {
