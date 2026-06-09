@@ -217,14 +217,25 @@
             text-align: left;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 8px;
         }
         .cl-empty { color: #888; text-align: center; }
-        .comment {
+        .thread-row { display: flex; gap: 10px; align-items: flex-start; }
+        .thread-side { flex: 0 0 auto; min-width: 40px; text-align: center; padding-top: 12px; }
+        .thread-num { color: #f0c040; font-weight: bold; font-size: 0.92em; }
+        .thread-replies { color: #888; font-size: 0.75em; margin-top: 4px; white-space: nowrap; }
+        .thread-box {
+            flex: 1 1 auto;
+            min-width: 0;
             background: #0e0e16;
             border: 1px solid #222;
             border-radius: 12px;
             padding: 14px 16px;
+        }
+        .reply {
+            margin-top: 14px;
+            padding-left: 12px;
+            border-left: 2px solid rgba(240,192,64,0.3);
         }
         .comment-head {
             display: flex;
@@ -247,7 +258,6 @@
             font-size: 1.02em;
             margin-bottom: 12px;
         }
-        .comment.reply { border-left: 2px solid rgba(240,192,64,0.3); }
         .comment-meta { display: flex; align-items: baseline; gap: 12px; white-space: nowrap; }
         .reply-btn {
             background: none;
@@ -259,6 +269,13 @@
             white-space: nowrap;
         }
         .reply-btn:hover { text-decoration: underline; }
+        .new-msg-box, .reply-form {
+            border: 1px solid rgba(240,192,64,0.4);
+            border-radius: 12px;
+            padding: 16px;
+            background: #10101a;
+        }
+        .new-msg-box { margin-bottom: 22px; }
         .reply-form { margin-top: 12px; }
         .reply-to {
             color: #f0c040;
@@ -391,11 +408,13 @@
         <div class="feedback">
             <h3>Comments &amp; Feedback Board</h3>
             <p class="lead">A public board — post a comment for everyone to see, share an idea, or reply to others.</p>
-            <div class="new-msg-label">✍ Write a new message</div>
-            <input id="cName" class="fb-name" type="text" maxlength="40" placeholder="Your name (optional)">
-            <input id="cHp" class="fb-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
-            <textarea id="cText" maxlength="1000" placeholder="Write your message here…"></textarea>
-            <button id="cPost" onclick="postComment()">Post to Board</button>
+            <div class="new-msg-box">
+                <div class="new-msg-label">✍ Write a new message</div>
+                <input id="cName" class="fb-name" type="text" maxlength="40" placeholder="Your name (optional)">
+                <input id="cHp" class="fb-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+                <textarea id="cText" maxlength="1000" placeholder="Write your message here…"></textarea>
+                <button id="cPost" onclick="postComment()">Post new Message</button>
+            </div>
             <p id="cStatus" class="fb-status"></p>
             <div id="cList" class="comment-list"><p class="cl-empty">Loading messages…</p></div>
         </div>
@@ -473,11 +492,25 @@
         const replyDraft = { name: '', text: '' }; // preserved across re-renders
         window.replyDraft = replyDraft;          // reachable from inline oninput
 
-        function commentHTML(c, depth) {
-            const indent = Math.min(depth, 6) * 18;
-            const cls = depth > 0 ? 'comment reply' : 'comment';
+        function replyFormHTML(id, nm) {
+            return '<div class="reply-form">'
+                + '<div class="reply-to">↩ Replying to <b>' + nm + '</b></div>'
+                + '<input class="fb-name" type="text" maxlength="40" placeholder="Your name (optional)" '
+                + 'value="' + esc(replyDraft.name) + '" oninput="replyDraft.name=this.value">'
+                + '<textarea maxlength="1000" placeholder="Write your reply…" '
+                + 'oninput="replyDraft.text=this.value">' + esc(replyDraft.text) + '</textarea>'
+                + '<div class="rf-actions">'
+                + '<button onclick="submitReply(\'' + id + '\')">Post Reply</button>'
+                + '<button class="cancel" onclick="toggleReply(\'' + id + '\')">Cancel</button>'
+                + '</div></div>';
+        }
+
+        // One message block (no card of its own). Roots use .msg; replies use .reply (indented).
+        function msgHTML(c, depth, isRoot) {
             const nm = esc(c.name || 'Anonymous');
-            let h = '<div class="' + cls + '" style="margin-left:' + indent + 'px">'
+            const cls = isRoot ? 'msg' : 'reply';
+            const style = isRoot ? '' : ' style="margin-left:' + (Math.min(depth, 6) * 18) + 'px"';
+            let h = '<div class="' + cls + '"' + style + '>'
                 + '<div class="comment-head">'
                 + '<span class="comment-name">' + nm + '</span>'
                 + '<span class="comment-meta">'
@@ -486,19 +519,15 @@
                 + '</span>'
                 + '</div>'
                 + '<div class="comment-text">' + esc(c.text) + '</div>';
-            if (openReplyId === c.id) {
-                h += '<div class="reply-form">'
-                    + '<div class="reply-to">↩ Replying to <b>' + nm + '</b></div>'
-                    + '<input class="fb-name" type="text" maxlength="40" placeholder="Your name (optional)" '
-                    + 'value="' + esc(replyDraft.name) + '" oninput="replyDraft.name=this.value">'
-                    + '<textarea maxlength="1000" placeholder="Write your reply…" '
-                    + 'oninput="replyDraft.text=this.value">' + esc(replyDraft.text) + '</textarea>'
-                    + '<div class="rf-actions">'
-                    + '<button onclick="submitReply(\'' + c.id + '\')">Post Reply</button>'
-                    + '<button class="cancel" onclick="toggleReply(\'' + c.id + '\')">Cancel</button>'
-                    + '</div></div>';
-            }
+            if (openReplyId === c.id) h += replyFormHTML(c.id, nm);
             return h + '</div>';
+        }
+
+        function countDescendants(id, byParent) {
+            const kids = byParent[id] || [];
+            let n = kids.length;
+            kids.forEach(k => { n += countDescendants(k.id, byParent); });
+            return n;
         }
 
         function renderTree() {
@@ -511,13 +540,25 @@
                 const pid = c.parentId || '__root__';
                 (byParent[pid] = byParent[pid] || []).push(c);
             });
+            const roots = byParent['__root__'] || [];   // newest-first
             let html = '';
-            (function walk(parentKey, depth) {
-                let kids = byParent[parentKey] || [];
-                // top level newest-first; replies oldest-first (reads like a thread)
-                if (parentKey !== '__root__') kids = kids.slice().reverse();
-                kids.forEach(c => { html += commentHTML(c, depth); walk(c.id, depth + 1); });
-            })('__root__', 0);
+            roots.forEach((root, i) => {
+                const number = roots.length - i;          // stable running number (oldest = #1)
+                const replies = countDescendants(root.id, byParent);
+                html += '<div class="thread-row">'
+                    + '<div class="thread-side">'
+                    + '<div class="thread-num">#' + number + '</div>'
+                    + '<div class="thread-replies" title="replies">💬 ' + replies + '</div>'
+                    + '</div>'
+                    + '<div class="thread-box">';
+                html += msgHTML(root, 0, true);
+                // all descendants inside the SAME box, oldest-first within each level
+                (function walk(parentKey, depth) {
+                    const kids = (byParent[parentKey] || []).slice().reverse();
+                    kids.forEach(c => { html += msgHTML(c, depth, false); walk(c.id, depth + 1); });
+                })(root.id, 1);
+                html += '</div></div>';
+            });
             listEl.innerHTML = html;
             if (openReplyId) {
                 const ta = listEl.querySelector('.reply-form textarea');
